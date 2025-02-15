@@ -56,4 +56,5 @@ cp $TRAEFIK_BINARY $BIN_DIR/traefik
 
 export PATH="$BIN_DIR:$PATH"
 echo "-----> Installed Traefik:"
+cat $BIN_DIR/traefik | head -n 10
 traefik version
