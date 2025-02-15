@@ -54,6 +54,6 @@ chmod +x $TRAEFIK_BINARY
 echo "-----> Moving binary to the right place"
 cp $TRAEFIK_BINARY $BIN_DIR/traefik
 
-export PATH="$BIN_DIR/bin:$PATH"
+export PATH="$BIN_DIR:$PATH"
 echo "-----> Installed Traefik:"
 traefik version
