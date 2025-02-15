@@ -4,7 +4,7 @@
 
 # -e - always exit on error
 # -o pipefail - don't ignore exit codes when piping output
-set -eo pipefail
+# set -eo pipefail
 
 BUILD_DIR=${1:-.}
 CACHE_DIR=${2:-}
@@ -15,10 +15,6 @@ HEROKU_DIR=$BUILD_DIR/.heroku
 BIN_DIR=$HEROKU_DIR/bin
 # make directories
 mkdir -p $CACHE_DIR $BIN_DIR
-
-# To enable the local source build cache path, copy the files and match the build path with the startup path.
-cp -rp $BUILD_DIR $HOME
-cd $HOME
 
 # Export the content of the ENV_DIR into the environment
 if [ -d "$ENV_DIR" ]; then
@@ -38,14 +34,21 @@ then
   fi
 fi
 
-TRAEFIK_URL="https://github.com/containous/traefik/releases/download/${TRAEFIK_VERSION}/traefik_linux-amd64"
-TRAEFIK_BINARY="$CACHE_DIR/traefik_linux-amd64"
+TRAEFIK_URL="https://github.com/traefik/traefik/releases/download/${TRAEFIK_VERSION}/traefik_${TRAEFIK_VERSION}_linux_amd64.tar.gz"
+TRAEFIK_TAR="$CACHE_DIR/traefik.tar.gz"
+TRAEFIK_BINARY="$CACHE_DIR/traefik"
 
 if [ -f $TRAEFIK_BINARY ]; then
   echo "-----> Using traefik binary from cache"
 else
   echo "-----> Downloading traefik binary"
-  curl -s -L $TRAEFIK_URL -o $TRAEFIK_BINARY
+  curl -s -L $TRAEFIK_URL -o $TRAEFIK_TAR
+
+  echo "-----> Extracting traefik binary"
+  tar -xzf $TRAEFIK_TAR -C $CACHE_DIR traefik
+
+  # Clean up tar file
+  rm -rf $TRAEFIK_TAR
 fi
 
 echo "-----> Setting permissions"
@@ -56,5 +59,4 @@ cp $TRAEFIK_BINARY $BIN_DIR/traefik
 
 export PATH="$BIN_DIR:$PATH"
 echo "-----> Installed Traefik:"
-cat $BIN_DIR/traefik | head -n 10
 traefik version
