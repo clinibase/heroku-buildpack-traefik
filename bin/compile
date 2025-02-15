@@ -14,7 +14,7 @@ BP_DIR=$(cd "$(dirname "${0:-}")"; cd ..; pwd)
 HEROKU_DIR=$BUILD_DIR/.heroku
 BIN_DIR=$HEROKU_DIR/bin
 # make directories
-mkdir -p $HEROKU_DIR $BIN_DIR
+mkdir -p $CACHE_DIR $BIN_DIR
 
 # To enable the local source build cache path, copy the files and match the build path with the startup path.
 cp -rp $BUILD_DIR $HOME
@@ -54,5 +54,6 @@ chmod +x $TRAEFIK_BINARY
 echo "-----> Moving binary to the right place"
 cp $TRAEFIK_BINARY $BIN_DIR/traefik
 
-# export environment variables to subsequent buildpacks
-echo "export PATH=\"$BIN_DIR:\$PATH\"" >> "$BP_DIR/export"
+export PATH="$BIN_DIR/bin:$PATH"
+echo "-----> Installed Traefik:"
+traefik version
