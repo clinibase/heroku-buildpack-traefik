@@ -1,37 +1,62 @@
 #!/usr/bin/env bash
-# bin/compile <build-dir> <cache-dir>
+# bin/compile <build-dir> <cache-dir> <env-dir>
+# $HOME: /app
 
-set -e
+# -e - always exit on error
+# -o pipefail - don't ignore exit codes when piping output
+# set -eo pipefail
 
-BUILD_DIR=$1
-CACHE_DIR=$2
-ENV_DIR=$3
+BUILD_DIR=${1:-.}
+CACHE_DIR=${2:-}
+ENV_DIR=${3:-}
+BP_DIR=$(cd "$(dirname "${0:-}")"; cd ..; pwd)
 
-BIN_PATH="$BUILD_DIR/bin"
-LIB_PATH="$BUILD_DIR/vendor/wkhtmltox/lib"
-TMP_PATH="$BUILD_DIR/tmp"
-mkdir -p $CACHE_DIR $BIN_PATH $LIB_PATH $TMP_PATH
+HEROKU_DIR=$BUILD_DIR/.heroku
+BIN_DIR=$HEROKU_DIR/bin
+# make directories
+mkdir -p $CACHE_DIR $BIN_DIR
 
-if [[ -f "$ENV_DIR/TRAEFIK_VERSION" ]]; then
-  TRAEFIK_VERSION=$(cat "$ENV_DIR/TRAEFIK_VERSION")
-else
-  TRAEFIK_VERSION="1.7.9"
+# Export the content of the ENV_DIR into the environment
+if [ -d "$ENV_DIR" ]; then
+  for e in $(ls $ENV_DIR); do
+    export "$e=$(cat $ENV_DIR/$e)"
+  done
 fi
 
-TRAEFIK_URL="https://github.com/containous/traefik/releases/download/v${TRAEFIK_VERSION}/traefik_linux-amd64"
-TRAEFIK_BINARY="$CACHE_DIR/traefik_linux-amd64"
+# Set a default version if TRAEFIK_VERSION is not set
+TRAEFIK_VERSION=${TRAEFIK_VERSION:-"v3.3.3"}
 
-BIN_DIR=$(cd $(dirname $0); pwd)
+if [[ -n $TRAEFIK_VERSION ]]
+then
+  # prepend a v to version numbers, eg 1.0.19 -> v1.0.19
+  if [[ $TRAEFIK_VERSION =~ ^[0-9] ]]; then
+    TRAEFIK_VERSION="v${TRAEFIK_VERSION}"
+  fi
+fi
+
+TRAEFIK_URL="https://github.com/traefik/traefik/releases/download/${TRAEFIK_VERSION}/traefik_${TRAEFIK_VERSION}_linux_amd64.tar.gz"
+TRAEFIK_TAR="$CACHE_DIR/traefik.tar.gz"
+TRAEFIK_BINARY="$CACHE_DIR/traefik"
 
 if [ -f $TRAEFIK_BINARY ]; then
   echo "-----> Using traefik binary from cache"
 else
   echo "-----> Downloading traefik binary"
-  curl -s -L $TRAEFIK_URL -o $TRAEFIK_BINARY
+  curl -s -L $TRAEFIK_URL -o $TRAEFIK_TAR
+
+  echo "-----> Extracting traefik binary"
+  tar -xzf $TRAEFIK_TAR -C $CACHE_DIR traefik
+
+  # Clean up tar file
+  rm -rf $TRAEFIK_TAR
 fi
 
 echo "-----> Setting permissions"
 chmod +x $TRAEFIK_BINARY
 
 echo "-----> Moving binary to the right place"
-cp $TRAEFIK_BINARY $BIN_PATH/traefik
+cp $TRAEFIK_BINARY $BIN_DIR/traefik
+
+export PATH="$BIN_DIR:$PATH"
+echo "-----> Installed Traefik:"
+traefik version
