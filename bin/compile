@@ -25,6 +25,7 @@ fi
 
 # Set a default version if TRAEFIK_VERSION is not set
 TRAEFIK_VERSION=${TRAEFIK_VERSION:-"v3.3.3"}
+TRAEFIK_CACHE_ENABLED="${TRAEFIK_CACHE_ENABLED:-true}"
 
 if [[ -n $TRAEFIK_VERSION ]]
 then
@@ -54,8 +55,13 @@ fi
 echo "-----> Setting permissions"
 chmod +x $TRAEFIK_BINARY
 
+cp_or_mv_cmd="mv"
+if [ "$TRAEFIK_CACHE_ENABLED" = "true" ]; then
+  cp_or_mv_cmd="cp"
+fi
+
 echo "-----> Moving binary to the right place"
-cp $TRAEFIK_BINARY $BIN_DIR/traefik
+$cp_or_mv_cmd $TRAEFIK_BINARY $BIN_DIR/traefik
 
 export PATH="$BIN_DIR:$PATH"
 echo "-----> Installed Traefik:"
